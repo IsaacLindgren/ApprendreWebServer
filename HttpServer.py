@@ -48,6 +48,18 @@ class HttpServer(TcpServer):
         else:
             return self.error_handler_404(request)
 
+    def handler_HEAD(self, request):
+        return self.error_handler_505(request)
+
+    def handler_PUT(self, request):
+        return self.error_handler_505(request)
+
+    def handler_DELETE(self, request):
+        return self.error_handler_505(request)
+
+    def handler_CONNECT(self, request):
+        return self.error_handler_505(request)
+
     def handler_OPTIONS(self, request):
         STATUS = self.status(HTTPStatus.OK)
         HEADERS = self.headers(
@@ -62,6 +74,12 @@ class HttpServer(TcpServer):
 
         return b"".join([STATUS, HEADERS, BLANK, BODY])
 
+    def handler_TRACE(self, request):
+        return self.error_handler_505(request)
+
+    def handler_PATCH(self, request):
+        return self.error_handler_505(request)
+
     def error_handler(self, status):
         STATUS = self.status(status)
         HEADERS = self.headers()
@@ -75,6 +93,14 @@ class HttpServer(TcpServer):
 
     def error_handler_501(self, request):
         return self.error_handler(HTTPStatus.NOT_IMPLEMENTED)
+
+    def error_handler_505(self, request):
+        """TODO: https://www.rfc-editor.org/rfc/rfc7231#section-6.5.5
+        > The origin server MUST generate an
+        > Allow header field in a 405 response containing a list of the target
+        > resource's currently supported methods.
+        """
+        return self.error_handler(HTTPStatus.METHOD_NOT_ALLOWED)
 
     def status(self, status_code):
         return f"HTTP/1.1 {status_code.value} {status_code.phrase}\r\n".encode()
