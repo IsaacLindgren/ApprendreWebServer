@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.12
 
 import mimetypes
 import os
@@ -25,13 +25,10 @@ class HttpServer(TcpServer):
     def handler(self, data):
         request = HttpRequest(data)
 
-        print(f"Handing {request}")
-
-        try:
-            handler_method = getattr(self, f"handler_{request.method.value}")
-            return handler_method(request)
-        except AttributeError:
-            return self.error_handler_501()
+        handler_method = getattr(
+            self, f"handler_{request.method.value}", self.error_handler_501
+        )
+        return handler_method(request)
 
     def handler_GET(self, request):
         filename = request.uri.strip("/")
@@ -49,34 +46,41 @@ class HttpServer(TcpServer):
             return b"".join([STATUS, HEADERS, BLANK, BODY])
 
         else:
-            return self.error_handler_404()
+            return self.error_handler_404(request)
 
-    def error_handler_404(self):
-        STATUS = self.status(HTTPStatus.NOT_FOUND)
-        HEADERS = self.headers()
+    def handler_OPTIONS(self, request):
+        STATUS = self.status(HTTPStatus.OK)
+        HEADERS = self.headers(
+            {
+                "Allow": ", ".join(
+                    [m.strip("handler_") for m in dir(self) if m.startswith("handler_")]
+                )
+            }
+        )
         BLANK = b"\r\n"
-        BODY = b"""
-            <h1>404 Not Found</h1>
-        """
+        BODY = b""
 
         return b"".join([STATUS, HEADERS, BLANK, BODY])
 
-    def error_handler_501(self):
-        STATUS = self.status(HTTPStatus.NOT_IMPLEMENTED)
+    def error_handler(self, status):
+        STATUS = self.status(status)
         HEADERS = self.headers()
         BLANK = b"\r\n"
-
-        BODY = b"""
-            <h1>501 Not Implemented</h1>
-        """
+        BODY = f"<h1>{status.value} {status.phrase}</h1>".encode()
 
         return b"".join([STATUS, HEADERS, BLANK, BODY])
+
+    def error_handler_404(self, request):
+        return self.error_handler(HTTPStatus.NOT_FOUND)
+
+    def error_handler_501(self, request):
+        return self.error_handler(HTTPStatus.NOT_IMPLEMENTED)
 
     def status(self, status_code):
         return f"HTTP/1.1 {status_code.value} {status_code.phrase}\r\n".encode()
 
     def headers(self, additional={}):
-        always = {"Server": "Apprendre Web Server", "Content-Type": "text/html"}
+        always = {"Server": "Apprendre Web Server"}
 
         return b"".join(
             [

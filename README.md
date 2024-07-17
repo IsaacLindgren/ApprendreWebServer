@@ -12,7 +12,7 @@ To learn about something (web servers) by creating my own from scratch.
 ## TODO
 
 * Implement full HTTP
-    * Methods besides GET 
+    * Methods besides GET (HEAD, ~~POST~~, PUT, DELETE, CONNECT, OPTIONS, TRACE, PATCH)
     * Additional headers
     * Cookies
     * Caching
