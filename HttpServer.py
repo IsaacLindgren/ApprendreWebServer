@@ -49,7 +49,29 @@ class HttpServer(TcpServer):
             return self.error_handler_404(request)
 
     def handler_HEAD(self, request):
-        return self.error_handler_505(request)
+        """
+        HEAD implementation should match GET except that HEAD doesn't generate
+        or send BODY.
+        """
+        filename = request.uri.strip("/")
+
+        if os.path.exists(filename):
+            STATUS = self.status(HTTPStatus.OK)
+            HEADERS = self.headers(
+                {"Content-Type": mimetypes.guess_type(filename)[0] or "text/html"}
+            )
+            BLANK = b"\r\n"
+
+            """ 
+            with open(filename, "rb") as f:
+                BODY = f.read()
+
+            return b"".join([STATUS, HEADERS, BLANK, BODY])
+            """
+            return b"".join([STATUS, HEADERS, BLANK])
+
+        else:
+            return self.error_handler_404(request)
 
     def handler_PUT(self, request):
         return self.error_handler_505(request)
